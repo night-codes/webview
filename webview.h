@@ -97,6 +97,7 @@ typedef void (*webview_external_invoke_cb_t)(struct webview *w,
 struct webview {
   const char *url;
   const char *title;
+  const char *icon_path;
   int width;
   int height;
   int resizable;
@@ -158,6 +159,7 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking);
 WEBVIEW_API int webview_eval(struct webview *w, const char *js);
 WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
+WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon_path);
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                    uint8_t b, uint8_t a);
@@ -354,6 +356,11 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
 
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
   gtk_window_set_title(GTK_WINDOW(w->priv.window), title);
+}
+
+WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon_path) {
+  w->icon_path = icon_path;
+  //gtk_window_set_title(GTK_WINDOW(w->priv.window), title);
 }
 
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
@@ -1248,6 +1255,12 @@ WEBVIEW_API int webview_init(struct webview *w) {
 
   DisplayHTMLPage(w);
 
+  HANDLE hIcon = LoadImage(0, _T(w->icon_path), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE);
+  SendMessage(w->priv.hwnd, WM_SETICON, ICON_SMALL, hIcon);
+  SendMessage(w->priv.hwnd, WM_SETICON, ICON_BIG, hIcon);
+  SendMessage(GetWindow(w->priv.hwnd, GW_OWNER), WM_SETICON, ICON_SMALL, hIcon);
+  SendMessage(GetWindow(w->priv.hwnd, GW_OWNER), WM_SETICON, ICON_BIG, hIcon);
+
   SetWindowText(w->priv.hwnd, w->title);
   ShowWindow(w->priv.hwnd, SW_SHOWDEFAULT);
   UpdateWindow(w->priv.hwnd);
@@ -1366,6 +1379,15 @@ WEBVIEW_API void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
 
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
   SetWindowText(w->priv.hwnd, title);
+}
+
+WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon_path) {
+  w->icon_path = icon_path;
+  HANDLE hIcon = LoadImage(0, _T(w->icon_path), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE);
+  SendMessage(w->priv.hwnd, WM_SETICON, ICON_SMALL, hIcon);
+  SendMessage(w->priv.hwnd, WM_SETICON, ICON_BIG, hIcon);
+  SendMessage(GetWindow(w->priv.hwnd, GW_OWNER), WM_SETICON, ICON_SMALL, hIcon);
+  SendMessage(GetWindow(w->priv.hwnd, GW_OWNER), WM_SETICON, ICON_BIG, hIcon);
 }
 
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
@@ -1738,6 +1760,11 @@ WEBVIEW_API int webview_init(struct webview *w) {
   [appMenu addItem:item];
 
   [NSApp setMainMenu:menubar];
+  NSString *nsIconPath = [NSString stringWithUTF8String: w->icon_path];
+  NSImage *image = [[NSImage alloc]initWithContentsOfFile: nsIconPath];
+  if (image != nil) {
+    [NSApp setApplicationIconImage: image];
+  }
 
   w->priv.should_exit = 0;
   return 0;
@@ -1764,6 +1791,15 @@ WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
   NSString *nsTitle = [NSString stringWithUTF8String:title];
   [w->priv.window setTitle:nsTitle];
+}
+
+WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon_path) {
+  w->icon_path = icon_path;
+  NSString *nsIconPath = [NSString stringWithUTF8String: icon_path];
+  NSImage *image = [[NSImage alloc]initWithContentsOfFile:nsIconPath];
+  if (image != nil) {
+    [NSApp setApplicationIconImage:image];
+  }
 }
 
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
