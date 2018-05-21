@@ -1257,10 +1257,13 @@ WEBVIEW_API int webview_init(struct webview *w) {
   DisplayHTMLPage(w);
 
   HANDLE hIcon = LoadImage(0, _T(w->icon_path), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE);
-  SendMessage(w->priv.hwnd, WM_SETICON, ICON_SMALL, hIcon);
-  SendMessage(w->priv.hwnd, WM_SETICON, ICON_BIG, hIcon);
-  SendMessage(GetWindow(w->priv.hwnd, GW_OWNER), WM_SETICON, ICON_SMALL, hIcon);
-  SendMessage(GetWindow(w->priv.hwnd, GW_OWNER), WM_SETICON, ICON_BIG, hIcon);
+  if (hIcon) {
+    SendMessage(w->priv.hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+    SendMessage(w->priv.hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+    SendMessage(GetWindow(w->priv.hwnd, GW_OWNER), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+    SendMessage(GetWindow(w->priv.hwnd, GW_OWNER), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+    DestroyIcon(hIcon);
+  }
 
   SetWindowText(w->priv.hwnd, w->title);
   ShowWindow(w->priv.hwnd, SW_SHOWDEFAULT);
