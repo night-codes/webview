@@ -1256,7 +1256,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
 
   DisplayHTMLPage(w);
 
-  HANDLE hIcon = LoadImage(0, _T(w->icon_path), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE);
+  HANDLE hIcon = LoadImage(NULL, w->icon_path, IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_SHARED);
   if (hIcon) {
     SendMessage(w->priv.hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
     SendMessage(w->priv.hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
@@ -1387,7 +1387,7 @@ WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
 
 WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon_path) {
   w->icon_path = icon_path;
-  HANDLE hIcon = LoadImage(0, _T(w->icon_path), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE);
+  HANDLE hIcon = LoadImage(NULL, w->icon_path, IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_SHARED);
   if (hIcon) {
     SendMessage(w->priv.hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
     SendMessage(w->priv.hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
