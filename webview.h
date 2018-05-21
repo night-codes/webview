@@ -301,6 +301,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   w->priv.queue = g_async_queue_new();
   w->priv.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(w->priv.window), w->title);
+  gtk_window_set_icon_from_file(GTK_WINDOW(w->priv.window), w->icon_path, NULL);
 
   if (w->resizable) {
     gtk_window_set_default_size(GTK_WINDOW(w->priv.window), w->width,
@@ -360,7 +361,7 @@ WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
 
 WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon_path) {
   w->icon_path = icon_path;
-  //gtk_window_set_title(GTK_WINDOW(w->priv.window), title);
+  gtk_window_set_icon_from_file(GTK_WINDOW(w->priv.window), icon_path, NULL);
 }
 
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
@@ -1433,7 +1434,7 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                    uint8_t b, uint8_t a) {
   HBRUSH brush = CreateSolidBrush(RGB(r, g, b));
-  SetClassLongPtr(w->priv.hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)brush);  
+  SetClassLongPtr(w->priv.hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)brush);
 }
 
 /* These are missing parts from MinGW */
@@ -1924,3 +1925,5 @@ WEBVIEW_API void webview_print_log(const char *s) { NSLog(@"%s", s); }
 #endif
 
 #endif /* WEBVIEW_H */
+
+
