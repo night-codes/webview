@@ -79,6 +79,10 @@ static inline void CgoWebViewSetColor(void *w, uint8_t r, uint8_t g, uint8_t b, 
 	webview_set_color((struct webview *)w, r, g, b, a);
 }
 
+static inline void CgoWebViewSetSize(void *w, int width, int height) {
+	webview_set_size((struct webview *)w, width, height);
+}
+
 static inline void CgoDialog(void *w, int dlgtype, int flags,
 		char *title, char *arg, char *res, size_t ressz) {
 	webview_dialog(w, dlgtype, flags,
@@ -201,10 +205,12 @@ type WebView interface {
 	// SetTitle() changes window title. This method must be called from the main
 	// thread only. See Dispatch() for more details.
 	SetTitle(title string)
-	// SetFullscreen() controls window full-screen mode. This method must be
-	// called from the main thread only. See Dispatch() for more details.
-	// thread only. See Dispatch() for more details.
+	// SetIcon() changes application and window icon. This method must be called from
+	// the main thread only. See Dispatch() for more details.
 	SetIcon(iconPath string)
+	// SetSize() changes window size. This method must be called from
+	// the main thread only. See Dispatch() for more details.
+	SetSize(width, height int)
 	// SetFullscreen() controls window full-screen mode. This method must be
 	// called from the main thread only. See Dispatch() for more details.
 	SetFullscreen(fullscreen bool)
@@ -343,6 +349,10 @@ func (w *webview) SetTitle(title string) {
 	p := C.CString(title)
 	defer C.free(unsafe.Pointer(p))
 	C.CgoWebViewSetTitle(w.w, p)
+}
+
+func (w *webview) SetSize(width, height int) {
+	C.CgoWebViewSetSize(w.w, C.int(width), C.int(height))
 }
 
 func (w *webview) SetIcon(iconPath string) {

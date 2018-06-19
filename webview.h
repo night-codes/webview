@@ -170,6 +170,7 @@ struct webview_priv
   WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
   WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon_path);
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
+  WEBVIEW_API void webview_set_size(struct webview *w, int width, int height);
   WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                      uint8_t b, uint8_t a);
   WEBVIEW_API void webview_dialog(struct webview *w,
@@ -390,6 +391,19 @@ struct webview_priv
   {
     gtk_main_iteration_do(blocking);
     return w->priv.should_exit;
+  }
+
+  WEBVIEW_API void webview_set_size(struct webview *w, int width, int height)
+  {
+    if (w->resizable)
+    {
+      gtk_window_set_default_size(GTK_WINDOW(w->priv.window), width,
+                                  height);
+    }
+    else
+    {
+      gtk_widget_set_size_request(w->priv.window, width, height);
+    }
   }
 
   WEBVIEW_API void webview_set_title(struct webview *w, const char *title)
@@ -1597,6 +1611,19 @@ struct webview_priv
     PostMessageW(w->priv.hwnd, WM_WEBVIEW_DISPATCH, (WPARAM)fn, (LPARAM)arg);
   }
 
+  WEBVIEW_API void webview_set_size(struct webview *w, int width, int height)
+  {
+    w->priv.saved_style = GetWindowLong(w->priv.hwnd, GWL_STYLE);
+    w->priv.saved_ex_style = GetWindowLong(w->priv.hwnd, GWL_EXSTYLE);
+    GetWindowRect(w->priv.hwnd, &w->priv.saved_rect);
+
+    SetWindowPos(w->priv.hwnd, NULL, w->priv.saved_rect.left,
+                 w->priv.saved_rect.top,
+                 width,
+                 height,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+  }
+
   WEBVIEW_API void webview_set_title(struct webview *w, const char *title)
   {
     SetWindowText(w->priv.hwnd, title);
@@ -2076,6 +2103,14 @@ struct webview_priv
       isRunLoopNested = NO;
     }
     return i;
+  }
+
+  WEBVIEW_API void webview_set_size(struct webview *w, int width, int height)
+  {
+    NSRect old = [w->priv.window frame];
+    NSRect r = NSMakeRect(old.origin.x - (width - old.size.width) / 2, old.origin.y - (height - old.size.height) / 2, width, height);
+    // set windows properties
+    [w->priv.window setFrame:r display:YES animate:YES];
   }
 
   WEBVIEW_API void webview_set_title(struct webview *w, const char *title)
