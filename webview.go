@@ -34,10 +34,14 @@ static inline void CgoWebViewFree(void *w) {
 	free(w);
 }
 
-static inline void *CgoWebViewCreate(int width, int height, char *title, char *icon_path, char *url, int resizable, int debug) {
+static inline void *CgoWebViewCreate(int width, int height, int min_width, int min_height, int max_width, int max_height, char *title, char *icon_path, char *url, int resizable, int debug) {
 	struct webview *w = (struct webview *) calloc(1, sizeof(*w));
 	w->width = width;
 	w->height = height;
+	w->min_width = min_width;
+	w->min_height = min_height;
+	w->max_width = max_width;
+	w->max_height = max_height;
 	w->title = title;
 	w->icon_path = icon_path;
 	w->url = url;
@@ -48,6 +52,7 @@ static inline void *CgoWebViewCreate(int width, int height, char *title, char *i
 		CgoWebViewFree(w);
 		return NULL;
 	}
+	webview_set_size(w, width, height, min_width, min_height, max_width, max_height);
 	return (void *)w;
 }
 
@@ -79,8 +84,8 @@ static inline void CgoWebViewSetColor(void *w, uint8_t r, uint8_t g, uint8_t b, 
 	webview_set_color((struct webview *)w, r, g, b, a);
 }
 
-static inline void CgoWebViewSetSize(void *w, int width, int height) {
-	webview_set_size((struct webview *)w, width, height);
+static inline void CgoWebViewSetSize(void *w, int width, int height, int min_width, int min_height, int max_width, int max_height) {
+	webview_set_size((struct webview *)w, width, height, min_width, min_height, max_width, max_height);
 }
 
 static inline void CgoDialog(void *w, int dlgtype, int flags,
@@ -125,31 +130,6 @@ func init() {
 	runtime.LockOSThread()
 }
 
-// Open is a simplified API to open a single native window with a full-size webview in
-// it. It can be helpful if you want to communicate with the core app using XHR
-// or WebSockets (as opposed to using JavaScript bindings).
-//
-// Window appearance can be customized using title, width, height and resizable parameters.
-// URL must be provided and can user either a http or https protocol, or be a
-// local file:// URL. On some platforms "data:" URLs are also supported
-// (Linux/MacOS).
-func Open(title, url string, w, h int, resizable bool) error {
-	titleStr := C.CString(title)
-	defer C.free(unsafe.Pointer(titleStr))
-	urlStr := C.CString(url)
-	defer C.free(unsafe.Pointer(urlStr))
-	resize := C.int(0)
-	if resizable {
-		resize = C.int(1)
-	}
-
-	r := C.webview(titleStr, urlStr, C.int(w), C.int(h), resize)
-	if r != 0 {
-		return errors.New("failed to create webview")
-	}
-	return nil
-}
-
 // Debug prints a debug string using stderr on Linux/BSD, NSLog on MacOS and
 // OutputDebugString on Windows.
 func Debug(a ...interface{}) {
@@ -186,6 +166,14 @@ type Settings struct {
 	Width int
 	// Window height in pixels
 	Height int
+	// Window minimal width in pixels
+	MinWidth int
+	// Window minimal height in pixels
+	MinHeight int
+	// Window maximum width in pixels
+	MaxWidth int
+	// Window maximum height in pixels
+	MaxHeight int
 	// Allows/disallows window resizing
 	Resizable bool
 	// Enable debugging tools (Linux/BSD/MacOS, on Windows use Firebug)
@@ -210,7 +198,7 @@ type WebView interface {
 	SetIcon(iconPath string)
 	// SetSize() changes window size. This method must be called from
 	// the main thread only. See Dispatch() for more details.
-	SetSize(width, height int)
+	SetSize(width, height int, limits ...int)
 	// SetFullscreen() controls window full-screen mode. This method must be
 	// called from the main thread only. See Dispatch() for more details.
 	SetFullscreen(fullscreen bool)
@@ -306,7 +294,7 @@ func New(settings Settings) WebView {
 		settings.Title = "WebView"
 	}
 	w := &webview{}
-	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height),
+	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height), C.int(settings.MinWidth), C.int(settings.MinHeight), C.int(settings.MaxWidth), C.int(settings.MaxHeight),
 		C.CString(settings.Title), C.CString(settings.Icon), C.CString(settings.URL),
 		C.int(boolToInt(settings.Resizable)), C.int(boolToInt(settings.Debug)))
 	m.Lock()
@@ -351,8 +339,26 @@ func (w *webview) SetTitle(title string) {
 	C.CgoWebViewSetTitle(w.w, p)
 }
 
-func (w *webview) SetSize(width, height int) {
-	C.CgoWebViewSetSize(w.w, C.int(width), C.int(height))
+func (w *webview) SetSize(width, height int, limits ...int) {
+	minWidth := -1
+	minHeight := -1
+	maxWidth := -1
+	maxHeight := -1
+
+	if len(limits) > 0 && limits[0] > 0 {
+		minWidth = limits[0]
+	}
+	if len(limits) > 1 && limits[1] > 0 {
+		minHeight = limits[1]
+	}
+	if len(limits) > 2 && limits[2] > 0 {
+		maxWidth = limits[2]
+	}
+	if len(limits) > 3 && limits[3] > 0 {
+		maxHeight = limits[3]
+	}
+	fmt.Println(width, height, minWidth, minHeight, maxWidth, maxHeight)
+	C.CgoWebViewSetSize(w.w, C.int(width), C.int(height), C.int(minWidth), C.int(minHeight), C.int(maxWidth), C.int(maxHeight))
 }
 
 func (w *webview) SetIcon(iconPath string) {
